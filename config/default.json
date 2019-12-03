@@ -1,0 +1,17 @@
+{
+    "cloudformation": {
+        "general": {
+            "owner": "gen",
+            "application": "evv"
+        },
+        "storage": {
+            "bucket": "gen-any-gbl-as3-bkt-cfn"
+        },
+        "networking": {
+            "addressPrefix": "10.10"
+        },
+        "environment": {
+            "shortName": "dev"
+        }
+    }
+}

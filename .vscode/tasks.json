@@ -1,0 +1,145 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build",
+            "type": "shell",
+            "command": "msbuild",
+            "args": [
+                "/property:GenerateFullPaths=true",
+                "/t:build",
+                "/consoleloggerparameters:NoSummary"
+            ],
+            "group": "build",
+            "presentation": {
+                "reveal": "silent"
+            },
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "aws-cloudformation: create-package",
+            "type": "shell",
+            "command": "aws",
+            "args": [
+                "cloudformation",
+                "package",
+                "--template-file",
+                "${file}",
+                "--s3-bucket",
+                "${input:s3Bucket}",
+                "--output-template-file",
+                "${fileDirname}\\${input:packageName}",
+                "--force-upload"
+            ],
+            "group": "build",
+            "problemMatcher": [],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": true
+            }
+        },
+        {
+            "label": "aws-cloudformation: deploy-package",
+            "type": "shell",
+            "command": "aws",
+            "args": [
+                "cloudformation",
+                "deploy",
+                "--template-file",
+                "'${fileDirname}/${input:packageName}'",
+                "--stack-name",
+                "${input:stackName}",
+                "--capabilities",
+                "CAPABILITY_IAM",
+                "CAPABILITY_NAMED_IAM"
+            ],
+            "group": "build",
+            "problemMatcher": [],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": true
+            }
+        },
+        {
+            "label": "-cloudformation: create-stack",
+            "type": "shell",
+            "command": "aws",
+            "args": [
+                "cloudformation",
+                "create-stack",
+                "--template-body",
+                "file://${file}",
+                "--stack-name",
+                "${input:stackName}",
+                "--capabilities",
+                "CAPABILITY_IAM"
+            ],
+            "group": "build",
+            "problemMatcher": [],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": true
+            }
+        },
+        {
+            "label": "-cloudformation: delete-stack",
+            "type": "shell",
+            "command": "aws",
+            "args": [
+                "cloudformation",
+                "delete-stack",
+                "--stack-name",
+                "${input:stackName}"
+            ],
+            "group": "build",
+            "problemMatcher": [],
+            "presentation": {
+                "echo": true,
+                "reveal": "silent",
+                "focus": false,
+                "panel": "new",
+                "showReuseMessage": false,
+                "clear": true
+            }
+        },
+        {
+            "type": "gulp",
+            "task": "cfn:network:publish",
+            "problemMatcher": []
+        }
+    ],
+    "inputs": [
+        {
+            "id": "stackName",
+            "description": "Choose your stack name (default is the name of the file)",
+            "type": "promptString",
+            "default": "${fileBasenameNoExtension}"
+        },
+        {
+            "id": "s3Bucket",
+            "description": "Choose your bucket (default is hst-all-gbl-as3-bkt-cfm)",
+            "type": "promptString",
+            "default": "hst-all-gbl-as3-bkt-cfm"
+        },
+        {
+            "id": "packageName",
+            "description": "Name of generated package (default is package.yml)",
+            "type": "promptString",
+            "default": "package.yml"
+        }
+    ]
+}

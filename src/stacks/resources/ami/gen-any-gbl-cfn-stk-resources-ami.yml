@@ -34,64 +34,58 @@ Resources:
     Properties:
       Handler: ami.cloudformation_handler
       Role: !GetAtt AMILambdaRole.Arn
-      Code: src/ami.py
+      Code: src/
       Runtime: python3.6
       Timeout: '300'
       Environment:
         Variables:
           STATE_MACHINE_ARN: !Ref StateMachine
-
   CreateInstanceLambdaFunction:
     Type: AWS::Lambda::Function
     Properties:
       Handler: ami.create_instance_handler
       Role: !GetAtt AMILambdaRole.Arn
-      Code: src/ami.py
+      Code: src/
       Runtime: python3.6
       Timeout: '300'
-
   GetInstanceStatusLambdaFunction:
     Type: AWS::Lambda::Function
     Properties:
       Handler: ami.get_instance_status_handler
       Role: !GetAtt AMILambdaRole.Arn
-      Code: src/ami.py
+      Code: src/
       Runtime: python3.6
       Timeout: '300'
-
   CreateImageFromInstanceFunction:
     Type: AWS::Lambda::Function
     Properties:
       Handler: ami.create_image_from_instance_handler
       Role: !GetAtt AMILambdaRole.Arn
-      Code: src/ami.py
+      Code: src/
       Runtime: python3.6
       Timeout: '300'
-
   GetImageStatusLambdaFunction:
     Type: AWS::Lambda::Function
     Properties:
       Handler: ami.get_image_status_handler
       Role: !GetAtt AMILambdaRole.Arn
-      Code: src/ami.py
+      Code: src/
       Runtime: python3.6
       Timeout: '300'
-
   TerminateInstanceFunction:
     Type: AWS::Lambda::Function
     Properties:
       Handler: ami.terminate_instance_handler
       Role: !GetAtt AMILambdaRole.Arn
-      Code: src/ami.py
+      Code: src/
       Runtime: python3.6
       Timeout: '300'
-
   SignalCloudFormationFunction:
     Type: AWS::Lambda::Function
     Properties:
       Handler: ami.signal_cloudformation_handler
       Role: !GetAtt AMILambdaRole.Arn
-      Code: src/ami.py
+      Code: src/
       Runtime: python3.6
       Timeout: '300'
 
@@ -203,4 +197,4 @@ Outputs:
   AMILambdaFunctionArn:
     Value: !GetAtt AMILambdaFunction.Arn
     Export:
-      Name: AMILambdaFunctionArn
+      Name: gen-any-gbl-cfn-exp-ami-resource

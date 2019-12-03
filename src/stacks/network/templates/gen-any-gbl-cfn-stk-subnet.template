@@ -14,7 +14,7 @@ Parameters:
     AllowedValues:
       - Public
       - Private
-  RootCidr:
+  AddressPrefix:
     Type: String
     Default: '10.10'
   IpClassC:
@@ -35,8 +35,8 @@ Resources:
       VpcId: !Ref VpcId
       MapPublicIpOnLaunch: !FindInMap [MapAccessibility, !Ref Accessibility, Value]
       CidrBlock: !Sub
-        - '${RootCidr}.${IpClassC}.0/24'
-        - { RootCidr: !Ref RootCidr, IpClassC: !Ref IpClassC }
+        - '${AddressPrefix}.${IpClassC}.0/24'
+        - { AddressPrefix: !Ref AddressPrefix, IpClassC: !Ref IpClassC }
       Tags:
       - Key: Name
         Value: !Sub

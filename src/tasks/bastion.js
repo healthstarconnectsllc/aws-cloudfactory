@@ -21,7 +21,7 @@ gulp.task('publish-bastion', function() {
             --parameter-overrides \
                 ParameterKey=Owner,ParameterValue=${options.owner} \
                 ParameterKey=Application,ParameterValue=${options.application} \
-                ParameterKey=RootCidr,ParameterValue=${options.rootCidr} \
+                ParameterKey=AddressPrefix,ParameterValue=${options.rootCidr} \
             --capabilities CAPABILITY_NAMED_IAM`))
         .pipe(exec.reporter());*/
 });

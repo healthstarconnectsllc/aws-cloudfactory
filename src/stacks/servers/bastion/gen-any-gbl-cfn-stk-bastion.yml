@@ -12,21 +12,14 @@ Resources:
   BaseName:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: "../../../utilities/gen-any-gbl-cfn-stk-naming.template"
+      TemplateURL: "file://../../../shared/gen-any-gbl-cfn-stk-naming.template"
       Parameters: 
         Owner: Healthstar
         Application: evv
   MainVpc:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: "../../network/gen-any-gbl-cfn-stk-network.yml"
-      Parameters: 
-        Owner: Healthstar
-        Application: evv
-  AMIStack:
-    Type: AWS::CloudFormation::Stack
-    Properties:
-      TemplateURL: "../../dist/custom-resource-cloudformation-ami.yml"
+      TemplateURL: "file://../../../network/gen-any-gbl-cfn-stk-network.yml"
       Parameters: 
         Owner: Healthstar
         Application: evv
@@ -90,7 +83,7 @@ Resources:
   AMI:
     Type: Custom::AMI
     Properties:
-      ServiceToken: !ImportValue AMILambdaFunctionArn
+      ServiceToken: !ImportValue gen-any-gbl-cfn-exp-ami-resource
       Image:
         Name: !Sub
         - "${BaseName}-ec2-ami-bas"

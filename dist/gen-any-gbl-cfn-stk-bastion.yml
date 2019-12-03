@@ -1,0 +1,158 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Creates a healthstar evv Bastion Image
+Parameters:
+  BaseImageId:
+    Type: String
+    Default: ami-0d5d9d301c853a04a
+  InstanceType:
+    Type: String
+    Default: t2.nano
+Resources:
+  BaseName:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://s3.us-east-2.amazonaws.com/gen-any-gbl-as3-bkt-cfn/6bb195b1a492f1bce701812cff43e25f.template
+      Parameters:
+        Owner: Healthstar
+        Application: evv
+  MainVpc:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://s3.us-east-2.amazonaws.com/gen-any-gbl-as3-bkt-cfn/f8cbc15fbd11ba5ed297960d1fb40a14.template
+      Parameters:
+        Owner: Healthstar
+        Application: evv
+  TemplateInstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName:
+        Fn::Sub:
+        - ${BaseName}-iam-rol-bas
+        - BaseName:
+            Fn::GetAtt:
+            - BaseName
+            - Outputs.BaseName
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - ec2.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: /
+      Policies:
+      - PolicyName:
+          Fn::Sub:
+          - ${BaseName}-iam-pol-bas
+          - BaseName:
+              Fn::GetAtt:
+              - BaseName
+              - Outputs.BaseName
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Sid: '1'
+            Effect: Allow
+            Action:
+            - ec2:CreateTags
+            Resource:
+            - '*'
+  TemplateInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: /
+      Roles:
+      - Ref: TemplateInstanceRole
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: The Healthstar Bastion Security Group
+      VpcId: vpc-02f35e704cb117447
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: 80
+        ToPort: 80
+        CidrIp: 0.0.0.0/0
+        Description: Anywhere
+      SecurityGroupEgress:
+      - IpProtocol: tcp
+        FromPort: 80
+        ToPort: 80
+        CidrIp: 0.0.0.0/0
+        Description: Anywhere
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub:
+          - ${BaseName}-vpc-sgp-bas
+          - BaseName:
+              Fn::GetAtt:
+              - BaseName
+              - Outputs.BaseName
+  AMI:
+    Type: Custom::AMI
+    Properties:
+      ServiceToken:
+        Fn::ImportValue: gen-any-gbl-cfn-exp-ami-resource
+      Image:
+        Name:
+          Fn::Sub:
+          - ${BaseName}-ec2-ami-bas
+          - BaseName:
+              Fn::GetAtt:
+              - BaseName
+              - Outputs.BaseName
+        Description: Healthstar EVV Bastion Image
+      TemplateInstance:
+        ImageId:
+          Ref: BaseImageId
+        IamInstanceProfile:
+          Arn:
+            Fn::GetAtt:
+            - TemplateInstanceProfile
+            - Arn
+        UserData:
+          Fn::Sub: '#!/bin/bash
+
+            apt-get update
+
+            sudo apt upgrade -y
+
+            sudo apt install awscli apache2 php7.2 libapache2-mod-php7.2 mysql-client-core-5.7
+            mysql-client-5.7 php7.2-mysql php7.2-curl php7.2-gd php7.2-intl php-pear
+            php-imagick php7.2-imap php-memcache  php7.2-pspell php7.2-recode php7.2-sqlite3
+            php7.2-tidy php7.2-xmlrpc php7.2-xsl php7.2-mbstring php-gettext
+
+            # Signal that the instance is ready
+
+            INSTANCE_ID=`wget -q -O - http://169.254.169.254/latest/meta-data/instance-id`
+
+            aws ec2 create-tags --resources $INSTANCE_ID --tags Key=UserDataFinished,Value=true
+            --region ${AWS::Region}
+
+            '
+        KeyName:
+          Fn::Sub:
+          - ${BaseName}-ec2-key-bas
+          - BaseName:
+              Fn::GetAtt:
+              - BaseName
+              - Outputs.BaseName
+        InstanceType:
+          Ref: InstanceType
+        SecurityGroupIds:
+          Fn::GetAtt:
+          - SecurityGroup
+          - GroupId
+        SubnetId: subnet-03e9f0a8f0f1372ce
+        BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: '10'
+            VolumeType: gp2
+Outputs:
+  AMIId:
+    Value:
+      Ref: AMI

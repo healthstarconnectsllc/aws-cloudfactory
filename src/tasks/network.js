@@ -26,7 +26,7 @@ gulp.task('cfn:network:publish', function() {
             --parameter-overrides \
                 ParameterKey=Owner,ParameterValue=${options.owner} \
                 ParameterKey=Application,ParameterValue=${options.application} \
-                ParameterKey=RootCidr,ParameterValue=${options.rootCidr}`))
+                ParameterKey=AddressPrefix,ParameterValue=${options.rootCidr}`))
         .pipe(exec.reporter());*/
 });
 

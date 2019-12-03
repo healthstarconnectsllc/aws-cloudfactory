@@ -1,0 +1,189 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Creates a EC2 AMI using CloudFormation
+Resources:
+  AMILambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Sid: ''
+          Effect: Allow
+          Principal:
+            Service: lambda.amazonaws.com
+          Action: sts:AssumeRole
+      Path: /
+      Policies:
+      - PolicyName: AccessAll
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Sid: '1'
+            Effect: Allow
+            Action:
+            - '*'
+            Resource: '*'
+  AMILambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: ami.cloudformation_handler
+      Role:
+        Fn::GetAtt:
+        - AMILambdaRole
+        - Arn
+      Code:
+        S3Bucket: gen-any-gbl-as3-bkt-cfn
+        S3Key: 574b4595211dbe5d7991e6a7af3ed256
+      Runtime: python3.6
+      Timeout: '300'
+      Environment:
+        Variables:
+          STATE_MACHINE_ARN:
+            Ref: StateMachine
+  CreateInstanceLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: ami.create_instance_handler
+      Role:
+        Fn::GetAtt:
+        - AMILambdaRole
+        - Arn
+      Code:
+        S3Bucket: gen-any-gbl-as3-bkt-cfn
+        S3Key: 574b4595211dbe5d7991e6a7af3ed256
+      Runtime: python3.6
+      Timeout: '300'
+  GetInstanceStatusLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: ami.get_instance_status_handler
+      Role:
+        Fn::GetAtt:
+        - AMILambdaRole
+        - Arn
+      Code:
+        S3Bucket: gen-any-gbl-as3-bkt-cfn
+        S3Key: 574b4595211dbe5d7991e6a7af3ed256
+      Runtime: python3.6
+      Timeout: '300'
+  CreateImageFromInstanceFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: ami.create_image_from_instance_handler
+      Role:
+        Fn::GetAtt:
+        - AMILambdaRole
+        - Arn
+      Code:
+        S3Bucket: gen-any-gbl-as3-bkt-cfn
+        S3Key: 574b4595211dbe5d7991e6a7af3ed256
+      Runtime: python3.6
+      Timeout: '300'
+  GetImageStatusLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: ami.get_image_status_handler
+      Role:
+        Fn::GetAtt:
+        - AMILambdaRole
+        - Arn
+      Code:
+        S3Bucket: gen-any-gbl-as3-bkt-cfn
+        S3Key: 574b4595211dbe5d7991e6a7af3ed256
+      Runtime: python3.6
+      Timeout: '300'
+  TerminateInstanceFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: ami.terminate_instance_handler
+      Role:
+        Fn::GetAtt:
+        - AMILambdaRole
+        - Arn
+      Code:
+        S3Bucket: gen-any-gbl-as3-bkt-cfn
+        S3Key: 574b4595211dbe5d7991e6a7af3ed256
+      Runtime: python3.6
+      Timeout: '300'
+  SignalCloudFormationFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: ami.signal_cloudformation_handler
+      Role:
+        Fn::GetAtt:
+        - AMILambdaRole
+        - Arn
+      Code:
+        S3Bucket: gen-any-gbl-as3-bkt-cfn
+        S3Key: 574b4595211dbe5d7991e6a7af3ed256
+      Runtime: python3.6
+      Timeout: '300'
+  StatesExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - Fn::Sub: states.${AWS::Region}.amazonaws.com
+          Action: sts:AssumeRole
+      Path: /
+      Policies:
+      - PolicyName: StatesExecutionPolicy
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - lambda:InvokeFunction
+            Resource:
+            - Fn::Sub: ${CreateInstanceLambdaFunction.Arn}
+            - Fn::Sub: ${GetInstanceStatusLambdaFunction.Arn}
+            - Fn::Sub: ${CreateImageFromInstanceFunction.Arn}
+            - Fn::Sub: ${GetImageStatusLambdaFunction.Arn}
+            - Fn::Sub: ${TerminateInstanceFunction.Arn}
+            - Fn::Sub: ${SignalCloudFormationFunction.Arn}
+  StateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      RoleArn:
+        Fn::GetAtt:
+        - StatesExecutionRole
+        - Arn
+      DefinitionString:
+        Fn::Sub: "{\n  \"Comment\": \"State machine for managing AMIs\",\n  \"StartAt\"\
+          : \"CreateInstance\",\n  \"States\": {\n    \"CreateInstance\": {\n    \
+          \  \"Type\": \"Task\",\n      \"Resource\": \"${CreateInstanceLambdaFunction.Arn}\"\
+          ,\n      \"Next\": \"WaitForInstance\"\n    },\n    \"WaitForInstance\"\
+          : {\n      \"Type\": \"Wait\",\n      \"Seconds\": 20,\n      \"Next\":\
+          \ \"GetInstanceStatus\"\n    },\n    \"GetInstanceStatus\": {\n      \"\
+          Type\": \"Task\",\n      \"Resource\": \"${GetInstanceStatusLambdaFunction.Arn}\"\
+          ,\n      \"Next\": \"CheckInstanceStatus\"\n    },\n    \"CheckInstanceStatus\"\
+          : {\n      \"Type\": \"Choice\",\n      \"Choices\": [\n        {\n    \
+          \      \"Variable\": \"$.instance_state\",\n          \"StringEquals\":\
+          \ \"READY\",\n          \"Next\": \"CreateImageFromInstance\"\n        }\n\
+          \      ],\n      \"Default\": \"WaitForInstance\"\n    },\n    \"CreateImageFromInstance\"\
+          : {\n      \"Type\": \"Task\",\n      \"Resource\": \"${CreateImageFromInstanceFunction.Arn}\"\
+          ,\n      \"Next\": \"WaitForImage\"\n    },\n    \"WaitForImage\": {\n \
+          \     \"Type\": \"Wait\",\n      \"Seconds\": 20,\n      \"Next\": \"GetImageStatus\"\
+          \n    },\n    \"GetImageStatus\": {\n      \"Type\": \"Task\",\n      \"\
+          Resource\": \"${GetImageStatusLambdaFunction.Arn}\",\n      \"Next\": \"\
+          CheckImageStatus\"\n    },\n    \"CheckImageStatus\": {\n      \"Type\"\
+          : \"Choice\",\n      \"Choices\": [\n        {\n          \"Variable\":\
+          \ \"$.image_state\",\n          \"StringEquals\": \"READY\",\n         \
+          \ \"Next\": \"TerminateInstance\"\n        }\n      ],\n      \"Default\"\
+          : \"WaitForImage\"\n    },\n    \"TerminateInstance\": {\n      \"Type\"\
+          : \"Task\",\n      \"Resource\": \"${TerminateInstanceFunction.Arn}\",\n\
+          \      \"Next\": \"SignalCloudFormation\"\n    },\n    \"SignalCloudFormation\"\
+          : {\n      \"Type\": \"Task\",\n      \"Resource\": \"${SignalCloudFormationFunction.Arn}\"\
+          ,\n      \"End\": true\n    }\n  }\n}"
+Outputs:
+  AMILambdaFunctionArn:
+    Value:
+      Fn::GetAtt:
+      - AMILambdaFunction
+      - Arn
+    Export:
+      Name: gen-any-gbl-cfn-exp-ami-resource

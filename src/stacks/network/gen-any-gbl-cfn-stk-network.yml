@@ -8,14 +8,14 @@ Parameters:
   Application:
     Type: String
     Default: any
-  RootCidr:
+  AddressPrefix:
     Type: String
     Default: '10.10'
 Resources:
   BaseName:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: "../../utilities/gen-any-gbl-cfn-stk-naming.template"
+      TemplateURL: "../shared/gen-any-gbl-cfn-stk-naming.template"
       Parameters: 
         Owner: !Ref Owner
         Application: !Ref Application
@@ -23,8 +23,8 @@ Resources:
     Type: AWS::EC2::VPC
     Properties:
       CidrBlock: !Sub 
-        - '${RootCidr}.0.0/16' 
-        - { RootCidr: !Ref RootCidr }
+        - '${AddressPrefix}.0.0/16' 
+        - { AddressPrefix: !Ref AddressPrefix }
       EnableDnsSupport: true
       InstanceTenancy: default
       Tags:
@@ -41,7 +41,7 @@ Resources:
         VpcId: !Ref VpcMain
         AvailabilityZone: "a"
         Accessibility: Public
-        RootCidr: !Ref RootCidr
+        AddressPrefix: !Ref AddressPrefix
         IpClassC: 0
   SubnetAzbPublic:
     Type: AWS::CloudFormation::Stack
@@ -52,7 +52,7 @@ Resources:
         VpcId: !Ref VpcMain
         AvailabilityZone: "b"
         Accessibility: Public
-        RootCidr: !Ref RootCidr
+        AddressPrefix: !Ref AddressPrefix
         IpClassC: 1
   SubnetAzbPrivate:
     Type: AWS::CloudFormation::Stack
@@ -63,7 +63,7 @@ Resources:
         VpcId: !Ref VpcMain
         AvailabilityZone: "b"
         Accessibility: Private
-        RootCidr: !Ref RootCidr
+        AddressPrefix: !Ref AddressPrefix
         IpClassC: 2
   SubnetAzcPrivate:
     Type: AWS::CloudFormation::Stack
@@ -74,7 +74,7 @@ Resources:
         VpcId: !Ref VpcMain
         AvailabilityZone: "c"
         Accessibility: Private
-        RootCidr: !Ref RootCidr
+        AddressPrefix: !Ref AddressPrefix
         IpClassC: 3
   RouteTablePublic:
     Type: AWS::EC2::RouteTable
@@ -236,6 +236,7 @@ Resources:
         CidrIp: 0.0.0.0/0
         Description: 'Anywhere'
       GroupName: !Sub
+          - "${BaseName}-vpc-spg"
           - { BaseName: !GetAtt BaseName.Outputs.BaseName }
       Tags: 
       - Key: Name
